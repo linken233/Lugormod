@@ -307,6 +307,21 @@ typedef struct {
 	float		facial_aux;			// time before next aux. If a minus value, we are in aux mode
 
 	int			superSmoothTime; //do crazy amount of smoothing
+	
+	//[2] array cause there are 2 sabers :)
+
+	vec3_t	rgb1;
+	vec3_t	rgb2;
+	vec3_t	PimpColorFrom[2];
+	vec3_t	PimpColorTo[2];
+	int		PimpStartTime[2];
+	int		PimpEndTime[2];
+	vec3_t  ScriptedColors[10][2];
+	int		ScriptedTimes[10][2];
+	int		ScriptedNum[2]; //number of colors
+	int		ScriptedActualNum[2];
+	int		ScriptedStartTime[2];
+	int		ScriptedEndTime[2];
 
 #ifdef _XBOX
 	int			friendshipStatus;
@@ -1131,6 +1146,8 @@ typedef struct {
 	qhandle_t	purpleSaberCoreShader;
 	qhandle_t	saberBlurShader;
 	qhandle_t	swordTrailShader;
+	qhandle_t	rgbSaberGlowShader;
+	qhandle_t	rgbSaberCoreShader;
 
 	qhandle_t	yellowDroppedSaberShader;
 

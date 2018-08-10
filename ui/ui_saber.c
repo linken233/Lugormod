@@ -12,6 +12,7 @@ USER INTERFACE SABER LOADING & DISPLAY CODE
 //#include "../server/exe_headers.h"
 #include "ui_local.h"
 #include "ui_shared.h"
+#include "ui_main.c"
 
 //#define MAX_SABER_DATA_SIZE 0x8000
 #define MAX_SABER_DATA_SIZE 0x80000
@@ -34,6 +35,8 @@ static qhandle_t blueSaberGlowShader;
 static qhandle_t blueSaberCoreShader;
 static qhandle_t purpleSaberGlowShader;
 static qhandle_t purpleSaberCoreShader;
+static qhandle_t rgbSaberGlowShader;
+static qhandle_t rgbSaberCoreShader;
 
 void UI_CacheSaberGlowGraphics( void )
 {//FIXME: these get fucked by vid_restarts
@@ -48,7 +51,9 @@ void UI_CacheSaberGlowGraphics( void )
 	blueSaberGlowShader			= trap_R_RegisterShaderNoMip( "gfx/effects/sabers/blue_glow" );
 	blueSaberCoreShader			= trap_R_RegisterShaderNoMip( "gfx/effects/sabers/blue_line" );
 	purpleSaberGlowShader		= trap_R_RegisterShaderNoMip( "gfx/effects/sabers/purple_glow" );
-	purpleSaberCoreShader		= trap_R_RegisterShaderNoMip( "gfx/effects/sabers/purple_line" );
+	purpleSaberCoreShader		= trap_R_RegisterShaderNoMip( "gfx/effects/sabers/purple_line" );	
+	rgbSaberGlowShader			= trap_R_RegisterShaderNoMip("gfx/effects/sabers/rgb_glow");
+	rgbSaberCoreShader			= trap_R_RegisterShaderNoMip("gfx/effects/sabers/rgb_line");
 }
 
 qboolean UI_ParseLiteral( const char **data, const char *string ) 
@@ -399,7 +404,166 @@ void UI_SaberLoadParms( void )
 	}
 }
 
-void UI_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, float radius, saber_colors_t color )
+void RGB_LerpColor(vec3_t from, vec3_t to, float frac, vec3_t out)
+{
+	vec3_t diff;
+	int i;
+
+	VectorSubtract(to, from, diff);
+
+	VectorCopy(from, out);
+
+	for (i = 0; i<3; i++)
+		out[i] += diff[i] * frac;
+
+}
+
+int getint(char **buf)
+{
+	double temp;
+	temp = strtod(*buf, buf);
+	return (int)temp;
+}
+
+void ParseRGBSaber(char * str, vec3_t c)
+{
+	char *p = str;
+	int i;
+
+	for (i = 0; i<3; i++)
+	{
+		c[i] = getint(&p);
+		p++;
+	}
+}
+
+vec3_t  ScriptedColors[10][2] = { 0 };
+int		ScriptedTimes[10][2] = { 0 };
+int		ScriptedNum[2] = { 0 }; //number of colors
+int		ScriptedActualNum[2] = { 0 };
+int		ScriptedStartTime[2] = { 0 };
+int		ScriptedEndTime[2] = { 0 };
+
+void UI_ParseScriptedSaber(char *script, int snum)
+{
+	int n = 0, l;
+	char *p = script;
+	//	vec3_t yop;
+
+	l = strlen(p);
+	p++; //skip the 1st ':'
+
+		 //	Com_Printf("saber[%i] > %s\n",snum,p);
+	while (p[0] && p - script < l && n<10)
+	{
+		ParseRGBSaber(p, ScriptedColors[n][snum]);
+		while (p[0] != ':')
+			p++;
+		p++;            //skipped ':'
+
+		ScriptedTimes[n][snum] = getint(&p);
+
+		//		VectorCopy(ScriptedColors[n][snum],yop);
+		//		Com_Printf("saber[%i] > %i %i %i > %i\n",snum,(int)yop[0],(int)yop[1],(int)yop[2],ScriptedTimes[n][snum]);
+
+		p++;
+		n++;
+	}
+	ScriptedNum[snum] = n;
+}
+
+
+void RGB_AdjustSciptedSaberColor(vec3_t color, int n)
+{
+	int actual;
+	float frac;
+	int time = uiInfo.uiDC.realTime, i;
+
+	//	Com_Printf("%i\n",time);
+
+	if (!ScriptedStartTime[n])
+	{
+		//		Com_Printf("startnewColor\n");
+		ScriptedActualNum[n] = 0;
+		ScriptedStartTime[n] = time;
+		ScriptedEndTime[n] = time + ScriptedTimes[0][n];
+	}
+	else if (ScriptedEndTime[n] < time)
+	{
+		ScriptedActualNum[n] = (ScriptedActualNum[n] + 1) % ScriptedNum[n];
+		actual = ScriptedActualNum[n];
+		ScriptedStartTime[n] = time;
+		ScriptedEndTime[n] = time + ScriptedTimes[actual][n];
+	}
+
+	actual = ScriptedActualNum[n];
+
+	frac = (float)(time - ScriptedStartTime[n]) / (float)(ScriptedEndTime[n] - ScriptedStartTime[n]);
+
+
+	if (actual + 1 != ScriptedNum[n])
+		RGB_LerpColor(ScriptedColors[actual][n], ScriptedColors[actual + 1][n], frac, color);
+	else
+		RGB_LerpColor(ScriptedColors[actual][n], ScriptedColors[0][n], frac, color);
+
+	for (i = 0; i<3; i++)
+		color[i] /= 255;
+	//	Com_Printf("%i %i %i\n",(int)color[0],(int)color[1],(int)color[2]);
+
+}
+
+#define PIMP_MIN_INTESITY 120
+
+void RGB_RandomRGB(vec3_t c)
+{
+	int i;
+	for (i = 0; i<3; i++)
+		c[i] = 0;
+
+	while (c[0] + c[1] + c[2] < PIMP_MIN_INTESITY)
+		for (i = 0; i<3; i++)
+			c[i] = rand() % 255;
+
+	//	Com_Printf("color : %i %i %i\n",(int)c[0],(int)c[1],(int)c[2]);
+}
+
+int PimpStartTime[2];
+int PimpEndTime[2];
+vec3_t PimpColorFrom[2];
+vec3_t PimpColorTo[2];
+
+void RGB_AdjustPimpSaberColor(vec3_t color, int n)
+{
+	int time, i;
+	float frac;
+
+	if (!PimpStartTime[n])
+	{
+		PimpStartTime[n] = uiInfo.uiDC.realTime;
+		RGB_RandomRGB(PimpColorFrom[n]);
+		RGB_RandomRGB(PimpColorTo[n]);
+		time = 250 + rand() % 250;
+		PimpEndTime[n] = uiInfo.uiDC.realTime + time;
+	}
+	else if (PimpEndTime[n] < uiInfo.uiDC.realTime)
+	{
+		VectorCopy(PimpColorTo[n], PimpColorFrom[n]);
+		RGB_RandomRGB(PimpColorTo[n]);
+		time = 250 + rand() % 250;
+		PimpStartTime[n] = uiInfo.uiDC.realTime;
+		PimpEndTime[n] = uiInfo.uiDC.realTime + time;
+	}
+
+	frac = (float)(uiInfo.uiDC.realTime - PimpStartTime[n]) / (float)(PimpEndTime[n] - PimpStartTime[n]);
+
+	RGB_LerpColor(PimpColorFrom[n], PimpColorTo[n], frac, color);
+
+	for (i = 0; i<3; i++)
+		color[i] /= 255;
+
+}
+
+void UI_DoSaber(vec3_t origin, vec3_t dir, float length, float lengthMax, float radius, saber_colors_t color, int snum)
 {
 	vec3_t		mid, rgb={1,1,1};
 	qhandle_t	blade = 0, glow = 0;
@@ -407,6 +571,8 @@ void UI_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, float
 	float radiusmult;
 	float radiusRange;
 	float radiusStart;
+
+	int i;
 
 	if ( length < 0.5f )
 	{
@@ -449,6 +615,20 @@ void UI_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, float
 			blade = purpleSaberCoreShader;
 			VectorSet( rgb, 0.9f, 0.2f, 1.0f );
 			break;
+		case SABER_RGB:
+		{
+			if (snum == 0)
+				VectorSet(rgb, ui_sab1_r.value, ui_sab1_g.value, ui_sab1_b.value);
+			else
+				VectorSet(rgb, ui_sab2_r.value, ui_sab2_g.value, ui_sab2_b.value);
+
+			for (i = 0; i<3; i++)
+				rgb[i] /= 255;
+
+			glow = rgbSaberGlowShader;
+			blade = rgbSaberCoreShader;
+		}
+			break;
 	}
 
 	// always add a light because sabers cast a nice glow before they slice you in half!!  or something...
@@ -488,6 +668,17 @@ void UI_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, float
 	saber.reType = RT_SABER_GLOW;
 	saber.customShader = glow;
 	saber.shaderRGBA[0] = saber.shaderRGBA[1] = saber.shaderRGBA[2] = saber.shaderRGBA[3] = 0xff;
+
+
+	if (color != SABER_RGB)
+		saber.shaderRGBA[0] = saber.shaderRGBA[1] = saber.shaderRGBA[2] = saber.shaderRGBA[3] = 0xff;
+	else
+	{
+		int i;
+		for (i = 0; i<3; i++)
+			saber.shaderRGBA[i] = rgb[i] * 255;
+		saber.shaderRGBA[3] = 255;
+	}
 	//saber.renderfx = rfx;
 
 	trap_R_AddRefEntityToScene( &saber );
@@ -502,6 +693,17 @@ void UI_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, float
 //	saber.radius = (1.0 + crandom() * 0.2f)*radiusmult;
 
 	trap_R_AddRefEntityToScene( &saber );
+	if(color != SABER_RGB)
+		return;
+
+	saber.customShader = rgbSaberCoreShader;
+	saber.reType = RT_LINE;
+	saber.shaderTexCoord[0] = saber.shaderTexCoord[1] = 1.0f;
+	saber.shaderRGBA[0] = saber.shaderRGBA[1] = saber.shaderRGBA[2] = saber.shaderRGBA[3] = 0xff;
+	saber.radius = (radiusStart + Q_flrand(-1.0f, 1.0f) * radiusRange)*radiusmult;
+	trap_R_AddRefEntityToScene(&saber);
+
+
 }
 
 char * SaberColorToString(saber_colors_t color)
@@ -523,6 +725,9 @@ char * SaberColorToString(saber_colors_t color)
 
 	if ( color == SABER_PURPLE)
 		return "purple";
+
+	if (color == SABER_RGB)
+		return "rgb";
 	return NULL;
 }
 saber_colors_t TranslateSaberColor( const char *name ) 
@@ -550,6 +755,10 @@ saber_colors_t TranslateSaberColor( const char *name )
 	if ( !Q_stricmp( name, "purple" ) ) 
 	{
 		return SABER_PURPLE;
+	}
+	if (!Q_stricmp(name, "rgb"))
+	{
+		return SABER_RGB;
 	}
 	if ( !Q_stricmp( name, "random" ) ) 
 	{
@@ -625,14 +834,24 @@ void UI_SaberDrawBlade( itemDef_t *item, char *saberName, int saberModel, saberT
 	char *tagName;
 	int bolt;
 	float scale;
+	
+	int snum;
+
+	memset(axis, 0, sizeof(axis));
+
+
 
 	if ( (item->flags&ITF_ISSABER) && saberModel < 2 )
 	{
-		trap_Cvar_VariableStringBuffer("ui_saber_color", bladeColorString, sizeof(bladeColorString) );
+		snum = 0;
+		trap_Cvar_VariableStringBuffer("ui_saber_color", bladeColorString, sizeof(bladeColorString));
+
 	}
 	else//if ( item->flags&ITF_ISSABER2 ) - presumed
 	{
-		trap_Cvar_VariableStringBuffer("ui_saber2_color", bladeColorString, sizeof(bladeColorString) );
+		snum = 1;
+		trap_Cvar_VariableStringBuffer("ui_saber2_color", bladeColorString, sizeof(bladeColorString));
+
 	}
 
 	if ( !trap_G2API_HasGhoul2ModelOnIndex(&(item->ghoul2),saberModel) )
@@ -841,7 +1060,8 @@ void UI_SaberDrawBlade( itemDef_t *item, char *saberName, int saberModel, saberT
 		return;
 	}
 
-	UI_DoSaber( bladeOrigin, axis[0], bladeLength, bladeLength, bladeRadius, bladeColor );
+	UI_DoSaber(bladeOrigin, axis[0], bladeLength, bladeLength, bladeRadius, bladeColor, snum);
+
 
 }
 

@@ -260,7 +260,7 @@ extern qboolean			BGPAFtextLoaded;
 extern animation_t		bgHumanoidAnimations[MAX_TOTALANIMATIONS];
 #include "../namespace_end.h"
 
-#define MAX_ANIM_FILES	16
+#define MAX_ANIM_FILES	512
 #define MAX_ANIM_EVENTS 300
 
 typedef enum

@@ -834,6 +834,11 @@ vmCvar_t	cg_hudFiles;
 vmCvar_t 	cg_scorePlum;
 vmCvar_t 	cg_smoothClients;
 
+vmCvar_t	rgb_saber1;
+vmCvar_t	rgb_saber2;
+vmCvar_t	rgb_script1;
+vmCvar_t	rgb_script2;
+
 #include "../namespace_begin.h"
 vmCvar_t	pmove_fixed;
 //vmCvar_t	cg_pmove_fixed;
@@ -995,7 +1000,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_thirdPersonVertOffset, "cg_thirdPersonVertOffset", "16", CVAR_CHEAT },
 	{ &cg_thirdPersonCameraDamp, "cg_thirdPersonCameraDamp", "0.3", 0 },
 	{ &cg_thirdPersonTargetDamp, "cg_thirdPersonTargetDamp", "0.5", CVAR_CHEAT },
-	
+
 	{ &cg_thirdPersonHorzOffset, "cg_thirdPersonHorzOffset", "0", CVAR_CHEAT },
 	{ &cg_thirdPersonAlpha,	"cg_thirdPersonAlpha",	"1.0", CVAR_CHEAT },
 
@@ -1018,29 +1023,33 @@ static cvarTable_t cvarTable[] = { // bk001129
 //	{ &cg_blueTeamName, "g_blueteam", DEFAULT_BLUETEAM_NAME, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_USERINFO },
 	{ &cg_currentSelectedPlayer, "cg_currentSelectedPlayer", "0", CVAR_ARCHIVE},
 	{ &cg_currentSelectedPlayerName, "cg_currentSelectedPlayerName", "", CVAR_ARCHIVE},
-//	{ &cg_singlePlayerActive, "ui_singlePlayerActive", "0", CVAR_USERINFO},
-	{ &cg_recordSPDemo, "ui_recordSPDemo", "0", CVAR_ARCHIVE},
-	{ &cg_recordSPDemoName, "ui_recordSPDemoName", "", CVAR_ARCHIVE},
+	//	{ &cg_singlePlayerActive, "ui_singlePlayerActive", "0", CVAR_USERINFO},
+		{ &cg_recordSPDemo, "ui_recordSPDemo", "0", CVAR_ARCHIVE},
+		{ &cg_recordSPDemoName, "ui_recordSPDemoName", "", CVAR_ARCHIVE},
 
-	{ &cg_cameraOrbit, "cg_cameraOrbit", "0", CVAR_CHEAT},
-	{ &cg_cameraOrbitDelay, "cg_cameraOrbitDelay", "50", CVAR_ARCHIVE},
-	{ &cg_timescaleFadeEnd, "cg_timescaleFadeEnd", "1", 0},
-	{ &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0", 0},
-	{ &cg_timescale, "timescale", "1", 0},
-	{ &cg_scorePlum, "cg_scorePlums", "1",  CVAR_ARCHIVE},
-	{ &cg_hudFiles, "cg_hudFiles", "ui/jahud.txt", CVAR_ARCHIVE},
-	{ &cg_smoothClients, "cg_smoothClients", "1",  CVAR_ARCHIVE},
-	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
+		{ &cg_cameraOrbit, "cg_cameraOrbit", "0", CVAR_CHEAT},
+		{ &cg_cameraOrbitDelay, "cg_cameraOrbitDelay", "50", CVAR_ARCHIVE},
+		{ &cg_timescaleFadeEnd, "cg_timescaleFadeEnd", "1", 0},
+		{ &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0", 0},
+		{ &cg_timescale, "timescale", "1", 0},
+		{ &cg_scorePlum, "cg_scorePlums", "1",  CVAR_ARCHIVE},
+		{ &cg_hudFiles, "cg_hudFiles", "ui/jahud.txt", CVAR_ARCHIVE},
+		{ &cg_smoothClients, "cg_smoothClients", "1",  CVAR_ARCHIVE},
+		{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
-	{ &pmove_fixed, "pmove_fixed", "0", 0},
-	{ &pmove_msec, "pmove_msec", "8", 0},
-	{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE},
-	{ &cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE},
-//	{ &cg_trueLightning, "cg_trueLightning", "0.0", CVAR_ARCHIVE},
-	{ &cg_showVehBounds, "cg_showVehBounds", "0", 0},
+		{ &pmove_fixed, "pmove_fixed", "0", 0},
+		{ &pmove_msec, "pmove_msec", "8", 0},
+		{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE},
+		{ &cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE},
+		//	{ &cg_trueLightning, "cg_trueLightning", "0.0", CVAR_ARCHIVE},
+			{ &cg_showVehBounds, "cg_showVehBounds", "0", 0},
 
-	{ &ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
-	{ &cg_snapshotTimeout, "cg_snapshotTimeout", "10", CVAR_ARCHIVE },
+			{ &ui_myteam, "ui_myteam", "0", CVAR_ROM | CVAR_INTERNAL},
+			{ &cg_snapshotTimeout, "cg_snapshotTimeout", "10", CVAR_ARCHIVE },
+		{ &rgb_saber1, "rgb_saber1", "0,150,150", NULL, CVAR_USERINFO | CVAR_ARCHIVE },
+		{&rgb_saber2, "rgb_saber2", "150,0,150", NULL, CVAR_USERINFO | CVAR_ARCHIVE },
+		{&rgb_script1, "rgb_script1", ":255,0,255:500:0,0,255:500:", NULL, CVAR_USERINFO | CVAR_ARCHIVE},
+		{&rgb_script2, "rgb_script2", ":0,255,255:500:0,255,0:500:", NULL, CVAR_USERINFO | CVAR_ARCHIVE},
 
 //	{ &cg_pmove_fixed, "cg_pmove_fixed", "0", CVAR_USERINFO | CVAR_ARCHIVE }
 /*
@@ -1108,6 +1117,11 @@ void CG_RegisterCvars( void ) {
 	trap_Cvar_Register(NULL, "ui_tm2_c3_cnt", "0", CVAR_ROM | CVAR_INTERNAL );
 	trap_Cvar_Register(NULL, "ui_tm2_c4_cnt", "0", CVAR_ROM | CVAR_INTERNAL );
 	trap_Cvar_Register(NULL, "ui_tm2_c5_cnt", "0", CVAR_ROM | CVAR_INTERNAL );
+	trap_Cvar_Register(&rgb_saber1, "rgb_saber1", "0,150,150", NULL, CVAR_USERINFO | CVAR_ARCHIVE);
+	trap_Cvar_Register(&rgb_saber2, "rgb_saber2", "150,0,150", NULL, CVAR_USERINFO | CVAR_ARCHIVE);
+	trap_Cvar_Register(&rgb_script1, "rgb_script1", ":255,0,255:500:0,0,255:500:", NULL, CVAR_USERINFO | CVAR_ARCHIVE);
+	trap_Cvar_Register(&rgb_script2, "rgb_script2", ":0,255,255:500:0,255,0:500:", NULL, CVAR_USERINFO | CVAR_ARCHIVE);
+
 
 }
 
@@ -1503,6 +1517,8 @@ static void CG_RegisterSounds( void ) {
 	cgs.media.purpleSaberCoreShader		= trap_R_RegisterShader( "gfx/effects/sabers/purple_line" );
 	cgs.media.saberBlurShader			= trap_R_RegisterShader( "gfx/effects/sabers/saberBlur" );
 	cgs.media.swordTrailShader			= trap_R_RegisterShader( "gfx/effects/sabers/swordTrail" );
+	cgs.media.rgbSaberGlowShader		= trap_R_RegisterShader("gfx/effects/sabers/rgb_glow");
+	cgs.media.rgbSaberCoreShader		= trap_R_RegisterShader("gfx/effects/sabers/rgb_line");
 
 	cgs.media.forceCoronaShader			= trap_R_RegisterShaderNoMip( "gfx/hud/force_swirl" );
 

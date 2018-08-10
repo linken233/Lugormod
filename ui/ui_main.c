@@ -5610,14 +5610,32 @@ static void UI_UpdateSaberHilt( qboolean secondSaber )
 	}
 }
 
-static void UI_UpdateSaberColor( qboolean secondSaber )
+static void UI_UpdateSaberColor(qboolean secondSaber)
 {
+	char str[32];
+	str[0] = '\0';
+
+	strncat(str, va("%i,%i,%i", ui_sab1_r.integer, ui_sab1_g.integer, ui_sab1_b.integer), sizeof(str));
+	trap_Cvar_Set("rgb_saber1", str);
+	str[0] = '\0';
+
+	strncat(str, va("%i,%i,%i", ui_sab2_r.integer, ui_sab2_g.integer, ui_sab2_b.integer), sizeof(str));
+	trap_Cvar_Set("rgb_saber2", str);
 }
+
+	//	Com_Printf("update saber : %i\n",secondSaber);
 
 extern char * SaberColorToString(saber_colors_t color);
 
+void ParseRGBSaber(char * str, vec3_t c);
+void UI_ParseScriptedSaber(char *script, int snum);
+
 static void UI_GetSaberCvars ( void )
 {
+	char strgb1[64], strgb2[64];
+	char scr1[256], scr2[256];
+	vec3_t c1, c2;
+
 //	trap_Cvar_Set ( "ui_saber_type", UI_Cvar_VariableString ( "g_saber_type" ) );
 	trap_Cvar_Set ( "ui_saber", UI_Cvar_VariableString ( "saber1" ) );
 	trap_Cvar_Set ( "ui_saber2", UI_Cvar_VariableString ( "saber2" ));
@@ -5627,6 +5645,57 @@ static void UI_GetSaberCvars ( void )
 
 	trap_Cvar_Set ( "ui_saber_color", UI_Cvar_VariableString ( "g_saber_color" ) );
 	trap_Cvar_Set ( "ui_saber2_color", UI_Cvar_VariableString ( "g_saber2_color" ) );
+
+
+	strncpy(strgb1, UI_Cvar_VariableString("rgb_saber1"), sizeof(strgb1));
+	strncpy(strgb2, UI_Cvar_VariableString("rgb_saber2"), sizeof(strgb2));
+
+	ParseRGBSaber(strgb1, c1);
+	ParseRGBSaber(strgb2, c2);
+
+	trap_Cvar_Set("ui_sab1_r", va("%f", c1[0]));
+	trap_Cvar_Set("ui_sab1_g", va("%f", c1[1]));
+	trap_Cvar_Set("ui_sab1_b", va("%f", c1[2]));
+
+	trap_Cvar_Set("ui_sab2_r", va("%f", c2[0]));
+	trap_Cvar_Set("ui_sab2_g", va("%f", c2[1]));
+	trap_Cvar_Set("ui_sab2_b", va("%f", c2[2]));
+
+	/*
+	fs(set,"%f",c1[0]);
+	trap_Cvar_Set("ui_sab1_r",set);
+	fs(set,"%f",c1[1]);
+	trap_Cvar_Set("ui_sab1_g",set);
+	fs(set,"%f",c1[2]);
+	trap_Cvar_Set("ui_sab1_b",set);
+
+	fs(set,"%f",c2[0]);
+	trap_Cvar_Set("ui_sab2_r",set);
+	fs(set,"%f",c2[1]);
+	trap_Cvar_Set("ui_sab2_g",set);
+	fs(set,"%f",c2[2]);
+	trap_Cvar_Set("ui_sab2_b",set);
+	*/
+
+	strncpy(scr1, UI_Cvar_VariableString("rgb_script1"), sizeof(scr1));
+	strncpy(scr2, UI_Cvar_VariableString("rgb_script2"), sizeof(scr2));
+
+	if (scr1[0] != ':')
+	{
+		trap_Cvar_Set("rgb_script1", ":255,0,255:500:0,0,255:500:");
+		strncpy(scr1, ":255,0,255:500:0,0,255:500:\0", sizeof(scr1));
+	}
+	if (scr2[0] != ':')
+	{
+		trap_Cvar_Set("rgb_script2", ":0,255,255:500:0,0,255:500:");
+		strncpy(scr2, ":0,255,255:500:0,0,255:500:\0", sizeof(scr2));
+	}
+
+	UI_ParseScriptedSaber(scr1, 0);
+	UI_ParseScriptedSaber(scr2, 1);
+
+	//	Com_Printf("ui_getsabercvar > %i,%i,%i %i,%i,%i\n",ui_sab1_r.integer,ui_sab1_g.integer,ui_sab1_b.integer,ui_sab2_r.integer,ui_sab2_g.integer,ui_sab2_b.integer);
+
 
 
 }
@@ -10805,6 +10874,14 @@ vmCvar_t	ui_team_fraglimit;
 vmCvar_t	ui_team_timelimit;
 vmCvar_t	ui_team_friendly;
 
+vmCvar_t	ui_sab1_r;
+vmCvar_t	ui_sab1_g;
+vmCvar_t	ui_sab1_b;
+vmCvar_t	ui_sab2_r;
+vmCvar_t	ui_sab2_g;
+vmCvar_t	ui_sab2_b;
+
+
 vmCvar_t	ui_ctf_capturelimit;
 vmCvar_t	ui_ctf_timelimit;
 vmCvar_t	ui_ctf_friendly;
@@ -10900,33 +10977,39 @@ vmCvar_t	ui_bypassMainMenuLoad;
 
 // bk001129 - made static to avoid aliasing
 static cvarTable_t		cvarTable[] = {
-	{ &ui_ffa_fraglimit, "ui_ffa_fraglimit", "20", CVAR_ARCHIVE|CVAR_INTERNAL },
-	{ &ui_ffa_timelimit, "ui_ffa_timelimit", "0", CVAR_ARCHIVE|CVAR_INTERNAL },
+	{ &ui_ffa_fraglimit, "ui_ffa_fraglimit", "20", CVAR_ARCHIVE | CVAR_INTERNAL },
+	{ &ui_ffa_timelimit, "ui_ffa_timelimit", "0", CVAR_ARCHIVE | CVAR_INTERNAL },
 
-	{ &ui_selectedModelIndex, "ui_selectedModelIndex", "16", CVAR_ARCHIVE|CVAR_INTERNAL },
+	{ &ui_selectedModelIndex, "ui_selectedModelIndex", "16", CVAR_ARCHIVE | CVAR_INTERNAL },
 
-	{ &ui_char_model,			"ui_char_model",		"jedi_tf",CVAR_ROM|CVAR_INTERNAL},
-	{ &ui_char_skin_head,		"ui_char_skin_head",	"head_a1",CVAR_ROM|CVAR_INTERNAL},
-	{ &ui_char_skin_torso,		"ui_char_skin_torso",	"torso_a1",CVAR_ROM|CVAR_INTERNAL}, 
-	{ &ui_char_skin_legs,		"ui_char_skin_legs",	"lower_a1",CVAR_ROM|CVAR_INTERNAL}, 
+	{ &ui_char_model,			"ui_char_model",		"jedi_tf",CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_char_skin_head,		"ui_char_skin_head",	"head_a1",CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_char_skin_torso,		"ui_char_skin_torso",	"torso_a1",CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_char_skin_legs,		"ui_char_skin_legs",	"lower_a1",CVAR_ROM | CVAR_INTERNAL},
 
-	{ &ui_char_anim,			"ui_char_anim",			"BOTH_WALK1",CVAR_ROM|CVAR_INTERNAL}, 
+	{ &ui_char_anim,			"ui_char_anim",			"BOTH_WALK1",CVAR_ROM | CVAR_INTERNAL},
 
-	{ &ui_saber_type,			"ui_saber_type",		"single",CVAR_ROM|CVAR_INTERNAL},
-	{ &ui_saber,				"ui_saber",				"single_1",CVAR_ROM|CVAR_INTERNAL}, 
-	{ &ui_saber2,				"ui_saber2",			"none",CVAR_ROM|CVAR_INTERNAL}, 
-	{ &ui_saber_color,			"ui_saber_color",		"yellow",CVAR_ROM|CVAR_INTERNAL},
-	{ &ui_saber2_color,			"ui_saber2_color",		"yellow",CVAR_ROM|CVAR_INTERNAL},
+	{ &ui_saber_type,			"ui_saber_type",		"single",CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_saber,				"ui_saber",				"single_1",CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_saber2,				"ui_saber2",			"none",CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_saber_color,			"ui_saber_color",		"yellow",CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_saber2_color,			"ui_saber2_color",		"yellow",CVAR_ROM | CVAR_INTERNAL},
 
-	{ &ui_char_color_red,		"ui_char_color_red",	"255", CVAR_ROM|CVAR_INTERNAL}, 
-	{ &ui_char_color_green,		"ui_char_color_green",	"255", CVAR_ROM|CVAR_INTERNAL}, 
-	{ &ui_char_color_blue,		"ui_char_color_blue",	"255", CVAR_ROM|CVAR_INTERNAL}, 
+	{ &ui_char_color_red,		"ui_char_color_red",	"255", CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_char_color_green,		"ui_char_color_green",	"255", CVAR_ROM | CVAR_INTERNAL},
+	{ &ui_char_color_blue,		"ui_char_color_blue",	"255", CVAR_ROM | CVAR_INTERNAL},
 
-	{ &ui_PrecacheModels,		"ui_PrecacheModels",	"0", CVAR_ARCHIVE}, 
+	{ &ui_PrecacheModels,		"ui_PrecacheModels",	"0", CVAR_ARCHIVE},
 
-	{ &ui_team_fraglimit, "ui_team_fraglimit", "0", CVAR_ARCHIVE|CVAR_INTERNAL },
-	{ &ui_team_timelimit, "ui_team_timelimit", "20", CVAR_ARCHIVE|CVAR_INTERNAL },
-	{ &ui_team_friendly, "ui_team_friendly",  "1", CVAR_ARCHIVE|CVAR_INTERNAL },
+	{ &ui_team_fraglimit, "ui_team_fraglimit", "0", CVAR_ARCHIVE | CVAR_INTERNAL },
+	{ &ui_team_timelimit, "ui_team_timelimit", "20", CVAR_ARCHIVE | CVAR_INTERNAL },
+	{ &ui_team_friendly, "ui_team_friendly",  "1", CVAR_ARCHIVE | CVAR_INTERNAL },
+
+	{&ui_sab1_r, "255", NULL, CVAR_INTERNAL},
+	{&ui_sab1_b, "255", NULL, CVAR_INTERNAL},
+	{&ui_sab2_r, "255", NULL, CVAR_INTERNAL},
+	{&ui_sab2_g, "255", NULL, CVAR_INTERNAL},
+	{&ui_sab2_b, "255", NULL, CVAR_INTERNAL},
 
 	{ &ui_ctf_capturelimit, "ui_ctf_capturelimit", "8", CVAR_ARCHIVE|CVAR_INTERNAL },
 	{ &ui_ctf_timelimit, "ui_ctf_timelimit", "30", CVAR_ARCHIVE|CVAR_INTERNAL },

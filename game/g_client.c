@@ -2593,6 +2593,7 @@ void ClientUserinfoChanged_Do( int clientNum ) {
 	gclient_t	*client = ent->client;
 	char	c1[MAX_INFO_STRING];
 	char	c2[MAX_INFO_STRING];
+	char buf[MAX_INFO_STRING];
 	//	char	redTeam[MAX_INFO_STRING];
 	//	char	blueTeam[MAX_INFO_STRING];
 	char	userinfo[MAX_INFO_STRING];
@@ -2602,6 +2603,12 @@ void ClientUserinfoChanged_Do( int clientNum ) {
 	//char	*value;
 	qboolean modelChanged;
 	char model[MAX_QPATH];
+
+	char	rgb1[MAX_INFO_STRING];
+	char	rgb2[MAX_INFO_STRING];
+	char	script1[MAX_INFO_STRING];
+	char	script2[MAX_INFO_STRING];
+
 
 	//stupid thing, why does it constantly clear the client number
 	ent->s.number = clientNum;
@@ -2778,6 +2785,19 @@ void ClientUserinfoChanged_Do( int clientNum ) {
 	// colors
 	strcpy(c1, Info_ValueForKey( userinfo, "color1" ));
 	strcpy(c2, Info_ValueForKey( userinfo, "color2" ));
+
+	Q_strncpyz(rgb1, Info_ValueForKey(userinfo, "rgb_saber1"), sizeof(rgb1));
+	Q_strncpyz(rgb2, Info_ValueForKey(userinfo, "rgb_saber2"), sizeof(rgb2));
+
+	Q_strncpyz(script1, Info_ValueForKey(userinfo, "rgb_script1"), sizeof(script1));
+	Q_strncpyz(script2, Info_ValueForKey(userinfo, "rgb_script2"), sizeof(script2));
+
+	Q_strcat(buf, sizeof(buf), va("tc1\\%s\\", rgb1));
+	Q_strcat(buf, sizeof(buf), va("tc2\\%s\\", rgb2));
+	Q_strcat(buf, sizeof(buf), va("ss1\\%s\\", script1));
+	Q_strcat(buf, sizeof(buf), va("ss2\\%s\\", script2));
+
+ 	
 
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds

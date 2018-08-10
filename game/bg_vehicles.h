@@ -68,7 +68,7 @@ typedef struct
 
 #define	VWFOFS(x) ((int)&(((vehWeaponInfo_t *)0)->x))
 
-#define MAX_VEH_WEAPONS	16	//sigh... no more than 16 different vehicle weapons
+#define MAX_VEH_WEAPONS	32	//sigh... no more than 16 different vehicle weapons
 #define VEH_WEAPON_BASE	0
 #define VEH_WEAPON_NONE	-1
 
