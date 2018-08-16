@@ -749,7 +749,10 @@ qboolean	ConsoleCommand( void ) {
 	return qtrue;
 	}
 	*/       
+	if (Q_stricmp(cmd, "sabercolor") == 0)
+	{
 
+	}
 	//end Lugormod
 
 	if ( Q_stricmp (cmd, "entitylist") == 0 ) {

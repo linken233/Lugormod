@@ -216,6 +216,9 @@ typedef struct {
 	vec3_t			color1;
 	vec3_t			color2;
 
+	vec3_t			rgb_saber1;
+	vec3_t			rgb_saber2;
+
 	int				icolor1;
 	int				icolor2;
 

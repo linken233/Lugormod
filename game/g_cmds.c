@@ -3403,6 +3403,61 @@ void Cmd_SaberAttackCycle_f(gentity_t *ent)
 	}
 }
 
+static void Cmd_Sabercolor_f(gentity_t *ent) {
+	int saberNum, red, green, blue, client = ent->client - level.clients;
+	byte r = 0, g = 0, b = 0;
+	const char *temp;
+	char sNum[8] = {0}, sRed[8] = {0}, sGreen[8] = {0}, sBlue[8] = {0}, userinfo[MAX_INFO_STRING] = {0};
+
+	trap_GetUserinfo(client, userinfo, sizeof(userinfo));
+	temp = Info_ValueForKey(userinfo, "rgb_saber1");
+	b = (atoi(temp) >> 16) & 0xf;
+	g = (atoi(temp) >> 8) & 0xf;
+	r = atoi(temp) & 0xf;
+
+	if (trap_Argc() < 5) {
+		trap_SendServerCommand(ent - g_entities, "print \"" S_COLOR_YELLOW "Usage: \\sabercolor " S_COLOR_WHITE
+			"<" S_COLOR_YELLOW "1-2" S_COLOR_WHITE "> "
+			"<" S_COLOR_RED "0-255" S_COLOR_WHITE "> "
+			"<" S_COLOR_GREEN "0-255" S_COLOR_WHITE "> "
+			"<" S_COLOR_CYAN "0-255" S_COLOR_WHITE ">\n\""
+		);
+		trap_SendServerCommand(ent - g_entities, va("print \"" S_COLOR_WHITE "Current: Saber 1: "
+			"<" S_COLOR_RED "%i" S_COLOR_WHITE "> "
+			"<" S_COLOR_GREEN "%i" S_COLOR_WHITE "> "
+			"<" S_COLOR_CYAN "%i" S_COLOR_WHITE ">\n\"", r, g, b)
+		);
+		temp = Info_ValueForKey(userinfo, "rgb_saber2");
+		b = (atoi(temp) >> 16) & 0xf;
+		g = (atoi(temp) >> 8) & 0xf;
+		r = atoi(temp) & 0xf;
+		trap_SendServerCommand(ent - g_entities, va("print \"" S_COLOR_WHITE "Current: Saber 2: "
+			"<" S_COLOR_RED "%i" S_COLOR_WHITE "> "
+			"<" S_COLOR_GREEN "%i" S_COLOR_WHITE "> "
+			"<" S_COLOR_CYAN "%i" S_COLOR_WHITE ">\n\"", r, g, b)
+		);
+
+		return;
+	}
+
+	trap_Argv(1, sNum, sizeof(sNum));
+	trap_Argv(2, sRed, sizeof(sRed));
+	trap_Argv(3, sGreen, sizeof(sGreen));
+	trap_Argv(4, sBlue, sizeof(sBlue));
+
+	saberNum = Com_Clampi(1, atoi(sNum), 2);
+	red = Com_Clampi(0, atoi(sRed), 255);
+	green = Com_Clampi(0, atoi(sGreen), 255);
+	blue = Com_Clampi(0, atoi(sBlue), 255);
+
+	Info_SetValueForKey(userinfo, (saberNum == 1) ? "rgb_saber1" : "rgb_saber2", va("%i", red | ((green | (blue << 8)) << 8)));
+	Info_SetValueForKey(userinfo, (saberNum == 1) ? "color1" : "color2", va("%i", SABER_RGB));
+	trap_SetUserinfo(client, userinfo);
+	ClientUserinfoChanged(client);
+
+	return;
+}
+
 qboolean G_OtherPlayersDueling(void)
 {
 	int i = 0;
@@ -4533,6 +4588,11 @@ void ClientCommand( int clientNum ) {
 			Cmd_Say_f (ent, qfalse, qtrue);
 		}
 		return;
+	}
+
+	if (Q_stricmp(cmd, "sabercolor") == 0)
+	{
+		Cmd_Sabercolor_f(ent);
 	}
 
 	if ((Q_stricmp (cmd, "give") == 0) && CheatsOk(ent))

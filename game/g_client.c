@@ -2783,17 +2783,21 @@ void ClientUserinfoChanged_Do( int clientNum ) {
 	teamLeader = client->sess.teamLeader;
 
 	// colors
-	strcpy(c1, Info_ValueForKey( userinfo, "color1" ));
-	strcpy(c2, Info_ValueForKey( userinfo, "color2" ));
-
+	Q_strncpyz(c1, Info_ValueForKey( userinfo, "color1" ), sizeof(c1));
+	Q_strncpyz(c2, Info_ValueForKey( userinfo, "color2" ), sizeof(c2));
+		
+	
 	Q_strncpyz(rgb1, Info_ValueForKey(userinfo, "rgb_saber1"), sizeof(rgb1));
 	Q_strncpyz(rgb2, Info_ValueForKey(userinfo, "rgb_saber2"), sizeof(rgb2));
+	Com_Printf("Value of rgb1: %s\n", rgb1);
+	Com_Printf("Value of rgb2: %s\n", rgb1);
 
 	Q_strncpyz(script1, Info_ValueForKey(userinfo, "rgb_script1"), sizeof(script1));
 	Q_strncpyz(script2, Info_ValueForKey(userinfo, "rgb_script2"), sizeof(script2));
 
 	Q_strcat(buf, sizeof(buf), va("tc1\\%s\\", rgb1));
 	Q_strcat(buf, sizeof(buf), va("tc2\\%s\\", rgb2));
+
 	Q_strcat(buf, sizeof(buf), va("ss1\\%s\\", script1));
 	Q_strcat(buf, sizeof(buf), va("ss2\\%s\\", script2));
 

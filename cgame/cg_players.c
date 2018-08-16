@@ -5507,7 +5507,7 @@ void CG_DoSaber(vec3_t origin, vec3_t dir, float length, float lengthMax, float 
 	float radiusmult;
 	float radiusRange;
 	float radiusStart;
-	vec3_t rgb = { 1, 255, 255 };
+	vec3_t rgb = { 1, 1, 1};
 	int i;
 
 	if ( length < 0.5f )
