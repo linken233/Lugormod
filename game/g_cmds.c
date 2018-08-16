@@ -3450,6 +3450,11 @@ static void Cmd_Sabercolor_f(gentity_t *ent) {
 	green = Com_Clampi(0, atoi(sGreen), 255);
 	blue = Com_Clampi(0, atoi(sBlue), 255);
 
+	trap_SendServerCommand(ent - g_entities, va("print " S_COLOR_WHITE "Current: Saber %i : "
+		"<" S_COLOR_RED "%i" S_COLOR_WHITE "> "
+		"<" S_COLOR_GREEN "%i" S_COLOR_WHITE "> "
+		"<" S_COLOR_CYAN "%i" S_COLOR_WHITE ">\n", saberNum, red, green, blue));
+
 	Info_SetValueForKey(userinfo, (saberNum == 1) ? "rgb_saber1" : "rgb_saber2", va("%i", red | ((green | (blue << 8)) << 8)));
 	Info_SetValueForKey(userinfo, (saberNum == 1) ? "color1" : "color2", va("%i", SABER_RGB));
 	trap_SetUserinfo(client, userinfo);
@@ -4595,7 +4600,7 @@ void ClientCommand( int clientNum ) {
 		Cmd_Sabercolor_f(ent);
 	}
 
-	if ((Q_stricmp (cmd, "give") == 0) && CheatsOk(ent))
+	else if ((Q_stricmp (cmd, "give") == 0) && CheatsOk(ent))
 	{
 		Cmd_Give_f (ent, 0);
 	}
